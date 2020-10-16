@@ -21,7 +21,7 @@ module.exports = function (ctx) {
     supportIE: true,
     build: {
       scopeHoisting: true,
-      publicPath:'/mobile/',
+      publicPath: '/mobile/',
       // vueRouterMode: 'history',
       // vueCompiler: true,
       // gzip: true,
@@ -41,8 +41,7 @@ module.exports = function (ctx) {
       port: 8888,
       open: true // opens browser window automatically
     },
-    //framework: 'all' --- includes everything; for dev only!
-    
+    // framework: 'all' --- includes everything; for dev only!
     framework: {
       components: [
         'QLayout',
@@ -67,7 +66,29 @@ module.exports = function (ctx) {
         'QRating',
         'QToggle',
         'QDatetime',
-        'QDatetimePicker'
+        'QDatetimePicker',
+        'QCard',
+        'QCardTitle',
+        'QCardMain',
+        'QCardSeparator',
+        'QCardActions',
+        'QDialog',
+        'QFab',
+        'QFabAction',
+        'QTooltip',
+        'QInfiniteScroll',
+        'QSpinner',
+        'QSpinnerAudio',
+        'QChip',
+        'QTable',
+        'QTh',
+        'QTr',
+        'QTd',
+        'QTableColumns',
+        'QPopupEdit',
+        'QSlider',
+        'QCollapsible',
+        'QModal'
       ],
       directives: [
         'Ripple'
@@ -75,10 +96,16 @@ module.exports = function (ctx) {
       // Quasar plugins
       plugins: [
         'Notify',
-        'Dialog'
-      ]
+        'Dialog',
+        'Loading'
+      ],
       // iconSet: ctx.theme.mat ? 'material-icons' : 'ionicons'
       // i18n: 'de' // Quasar language
+      config: {
+        loading: {
+          delay: 700
+        }
+      }
     },
     // animations: 'all' --- includes all animations
     animations: [],
