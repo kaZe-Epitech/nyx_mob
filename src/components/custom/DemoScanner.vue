@@ -4,72 +4,71 @@
 <!-- SINGLE PURCHASE ORDER -->
     <div v-if="poDisplayed" class="q-pa-xs">
       <!-- CART / COLLAPSIBLE SUPPLIER INFOS -->
-      <q-card flat bordered class="bg-white q-ma-md q-pa-md">
+      <q-card flat bordered class="bg-white q-ma-xs q-pa-xs">
         <q-collapsible icon="perm_identity" :label="this.currentPurchaseOrder.supplier">
-          <div>
+          <q-card class="q-pa-xs">
             <div><span class="caption">Date commande :</span> <b>{{ goodLookingDate(this.currentPurchaseOrder.expected_date) }}</b></div>
             <div><span class="caption">Producteur :</span> <b>{{ this.currentPurchaseOrder.supplier }}</b></div>
             <div><span class="caption">Contact : </span> <b>{{ this.currentPurchaseOrder.supplier }}</b></div>
             <div><span class="caption">Numéro de commande :</span> <b>{{ this.currentPurchaseOrder.number }}</b></div>
             <div><span class="caption">Statut actuel :</span> <b>{{ this.currentPurchaseOrder.status }}</b></div>
             <div><span class="caption">Type de bon :</span> <b>{{ this.currentPurchaseOrder.type }}</b></div>
-            <hr class="caption">
-            <p class="caption text-center">
-              <b>Nb d'items dans le panier : {{ this.currentPurchaseOrder.length }}</b>
-            </p>
-          </div>
+            <div><span class="caption">Nb d'items :</span> <b>{{ this.currentPurchaseOrder.line_items.length }}</b></div>
+            <div><span class="caption">Nb total de produits :</span> <b>{{ this.total }}</b></div>
+          </q-card>
         </q-collapsible>      
              
         <!-- CART ITEMS LIST -->
         <div class="">
-          <q-list class="bg-white" separator bordered striped>
-            <q-item :class="getTheColor(item, 'bg')" v-for="(item, index) in this.currentPurchaseOrder.line_items" :key="item.product_id" clickable v-ripple style="padding: 8px; min-height:60px;">
-              <div color="yellow" style="max-width: 150px;">
+          <q-list class="bg-white" separator bordered>
+            <q-item :class="getTheColor(item, 'bg')" v-for="(item, index) in this.currentPurchaseOrder.line_items" :key="item.product_id" style="padding: 8px; min-height:60px;">
+              <q-item-side style="max-width: 150px;">
                 <div :style="getTheColor(item, 'name')" name="q-item-label">{{ item.full_title }}</div>
-              </div>
-              <div class="absolute-right">
-                <div class="q-mr-xs text-right" style="display: inline-block; min-width: 31px;">
-                  <q-chip small pointing="right" style="width: 45px" :color="getTheColor(item, 'chip')">
-                    <b>{{ item.quantity }}</b>
+              </q-item-side>
+              <q-item-main>
+                <div class="q-mr-xs text-right" style="display: inline-block; min-width: 75px; float: right;">
+                  <q-chip small style="width: 75px; text-align: center" :color="getTheColor(item, 'chip')">
+                    <b>{{ item.received }} / {{ item.quantity }}</b>
+                    <!-- <b>{{ chipFill(item.quantity, item.received) }}</b> -->
                   </q-chip>
-                </div>
-                <div v-model="item.received" class="q-mr-xs text-center" style="display: inline-block; min-width: 31px;">
-                  {{ item.received }}
-                </div>
+                </div> 
+              </q-item-main>
+              <q-item-side>
                 <div>
                   <!-- old icon : settings -->
-                  <q-btn size="30px" flat dense square icon="priority_high" :color="getTheColor(item, 'btn')" @click="openProblemBox(index)" />
-                  <q-btn size="30px" flat dense square icon="done" :color="getTheColor(item, 'btn')" @click="lineIsOk(index)" />
+                  <q-btn size="20px" flat dense square icon="priority_high" :color="getTheColor(item, 'btn')" @click="openProblemBox(index)" class="btn-po" />
+                  <q-btn size="20px" flat dense square icon="done" :color="getTheColor(item, 'btn')" @click="lineIsOk(index)" class="btn-po" />
                 </div>
-              </div>
+              </q-item-side>
             </q-item>          
           </q-list>
         </div>
         <!-- BOUTTONS RETOUR & SEND DATA -->
         <div class="q-mt-md text-center">
           <q-btn label="Retour" color="primary" icon="arrow_back_ios" class="q-mx-lg" @click="backToList" />
-          <q-btn label="Valider le bon" color="light-blue-2" icon-right="send" class="q-mx-lg" :disable="!hasPoChanged" @click="sendData" />
+          <!-- <q-btn label="Valider le bon" color="light-blue-2" icon-right="send" class="q-mx-lg" :disable="!hasPoChanged" @click="sendData" /> -->
         </div>
       </q-card>
 
       <!-- REPORT PROBLEM DIALOG BOX -->
-      <q-dialog v-model="problemBox" prevent-close @cancel="onCancelProblem" @ok="onOkProblem">
+      <q-dialog v-model="problemBox" @ok="onOkProblem">
         <span slot="title">Quantité reçue</span>
-        <div slot="body" class="q-py-lg">
+        <div slot="body">
           <!-- <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span> -->
           <!-- <q-slider v-model="currentEditQty_received" :min="0" :max="currentEditQty" :step="1" label snap markers /> -->
           <div>
             <scroll-picker
-            :options="scrollPickerOptions"
-            v-model="currentEditQty_received"
-            :drag-sensitivity="1"
-            :touch-sensitivity="1"
-            :scroll-sensitivity="0.5" />
+              :options="scrollPickerOptions"
+              v-model="currentEditQty_received"
+              :drag-sensitivity="0.5"
+              :touch-sensitivity="0.5"
+              :scroll-sensitivity="0.5" 
+              :value="0"
+            />
           </div>
           
         </div>
         <template slot="buttons" slot-scope="props">
-          <q-btn flat label="Annuler" color="primary" @click="props.cancel" />
           <q-btn flat label="Valider" color="primary" @click="props.ok"/>
         </template>
       </q-dialog>
@@ -126,16 +125,19 @@
     <!-- STICKY BUTTON -->
     <q-fab v-if="!poDisplayed" v-model="overlayFab" color="primary" icon="calendar_today" direction="up" class="fixed" style="right: 25px; bottom: 25px; z-index: 10;" @click="toggleFab">
       <!-- TODAY BUTTON -->
-      <q-fab-action color="primary" @click="onToday" icon="today" class="my-fab-action">
+      <q-fab-action color="primary" @click="onToday" class="my-fab-action" icon="">
         Aujourd'hui
+        <q-icon name="today" style="margin-left: 5px;" />
       </q-fab-action>
       <!-- DATE BUTTON -->
-      <q-fab-action color="primary" @click="pickDateDialog = true" icon="event" class="my-fab-action">
+      <q-fab-action color="primary" @click="pickDateDialog = true" class="my-fab-action" icon="">
         Date
+        <q-icon name="event" style="margin-left: 5px;" />
       </q-fab-action>
       <!-- RANGE DATE BUTTON -->
-      <q-fab-action color="primary" @click="pickRangeDateDialog = true" icon="date_range" class="my-fab-action">
+      <q-fab-action color="primary" @click="pickRangeDateDialog = true" class="my-fab-action" icon="">
         Période
+        <q-icon name="date_range" style="margin-left: 5px;" />
       </q-fab-action>
     </q-fab>
 
@@ -143,7 +145,7 @@
     <q-dialog v-model="pickDateDialog" @ok="onOkDatePicker">
       <span slot="title">Choisir un jour</span>
       <div slot="body">
-        <q-datetime v-model="curSelDate" format="DD/MM/YYYY" />
+        <q-datetime-picker v-model="curSelDate" format="DD/MM/YYYY" />
       </div>
       <template slot="buttons" slot-scope="props">
         <q-btn flat label="Valider" color="primary" @click="props.ok"/>
@@ -230,6 +232,8 @@ export default {
       },
       poList: [],
       indice: 'purchase_order*',
+      indice2: 'nyx_user',
+      rawResponse: null,
       currentPurchaseOrder: null,
       originalPurchaseOrder: null,
       currentCart: null,
@@ -247,7 +251,9 @@ export default {
       sendBtn: true,
       overlayFab: false,
       showTooltip: true,
-      scrollPickerOptions: [1, 2, 3, 4, 5]
+      scrollPickerOptions: [],
+      scrollVar: null,
+      total: 0
     }
   },
   methods: {
@@ -275,31 +281,55 @@ export default {
     },
     getPurchaseOrder (id, index) {
       //console.log(' ################ >> getPurchaseOrder [id: '+ id +'] & [index: '+ index +']')
-    
+
       var url = this.$store.getters.apiurl + "generic/" + 
         index + "/" + id + "?token=" + this.$store.getters.creds.token
       //console.log('url: ', url)
 
       this.$q.loading.show()
-      this.timer = setTimeout(() => { this.timer = void 0 }, 4500)
+      // this.timer = setTimeout(() => { this.timer = void 0 }, 4500)
       axios.get(url)
         .then( response => {
+          console.log(' #####  AXIOS.POST #####')
+          this.rawResponse = response
           this.currentPurchaseOrder = response.data.data._source
           this.currentPurchaseOrder.line_items = Array.from(JSON.parse(this.currentPurchaseOrder.line_items))
           this.originalPurchaseOrder = JSON.parse(JSON.stringify(this.currentPurchaseOrder))
           //console.log('test >>>>>>> ', JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder))
+          //console.log(' ################ >> getPurchaseOrder',  this.rawResponse)
           for (var i =0; i < this.currentPurchaseOrder.line_items.length; i++) {
             this.currentPurchaseOrder.line_items[i].received = null
           }
           this.poDisplayed = true
           this.sendBtn = true
+          this.total = this.totalItems()
           this.$q.loading.hide()
         })
         .catch( error => {
           console.log('| getPurchaseOrder / GET| UN PROBLEME EST SURVENU : ', error)
           this.$q.loading.hide()
-        })
-        
+        }) 
+    },
+    sendData () {
+      console.log('======= SENDING DATA =========')
+      // console.log('order : ', this.currentPurchaseOrder)
+      // console.log('cart : ', this.currentCart)
+
+      // var updatedPurchaseOrder = {
+      //   "_index": index.de.la.fiche,
+      //   "_source": JSON.stringify(this.currentPurchaseOrder),
+      //   "_id": id.de.la.fiche
+      // }
+
+      // this.$store.commit({
+      //   type: "updateRecord",
+      //   data: updatedPurchaseOrder
+      // })
+
+      console.log("######### PRE SEND : ", tmp)
+
+      // modifier le status du bon
+      this.$q.notify({ message: 'Bon de commande sauvegardé', timeout: 1000, color: 'green' })
     },
     onToday () {
       this.dateFrom = moment().startOf('day').unix()*1000
@@ -359,6 +389,18 @@ export default {
       if (str === 'to_be_collected') return 'blue'
       if (str === 'fully_collected') return 'green'
     },
+    chipFill (qty, qty_rvd) {
+      // if (isNaN(this.currentEditQty_received)) {
+      //   return this.currentEditQty_received + ' / '+ this.currentEditQty
+      // } else {
+      //   return this.currentEditQty
+      // }
+      if (isNaN(qty_rvd)) {
+        return qty_rvd +' / '+ qty
+      } else {
+        return qty
+      }
+    },
     lineIsOk (index) {
       //console.log('LINE IS OK >>>> ', this.currentPurchaseOrder.line_items)
       this.currentPurchaseOrder.line_items[index].received = this.currentPurchaseOrder.line_items[index].quantity
@@ -375,24 +417,21 @@ export default {
       this.currentPurchaseOrder.line_items[this.currentEditId].received = this.currentEditQty_received
       this.currentEditQty = null
       this.currentEditQty_received = null
+      this.currentEditId = null
     },
-    openProblemBox (id) {
-      this.problemBox = true
+    openProblemBox (id) { 
       this.currentEditId = id
       this.currentEditQty = this.currentPurchaseOrder.line_items[id].quantity
       this.currentEditQty_received = this.currentPurchaseOrder.line_items[id].received
+      this.fillScrollPickerOptions(this.currentEditQty) 
+      this.problemBox = true
     },
-    sendData () {
-      console.log('======= SENDING DATA =========')
-      console.log('order : ', this.currentPurchaseOrder)
-      console.log('cart : ', this.currentCart)
-      // modifier le status du bon
-      this.$q.notify({ message: 'Bon de commande sauvegardé', timeout: 1000, color: 'green' })
+    fillScrollPickerOptions (int) {
+      this.scrollPickerOptions = []
+      for (var i = 0; i < int+1; i++) {
+        this.scrollPickerOptions.push(i)
+      }
     },
-    // getSupplierName () {
-    //   console.log('!!!!!!!!!!!! getgetget : ', this.currentPurchaseOrder)
-    //   return this.currentPurchaseOrder
-    // },
     getTheColor (obj, str) {
       switch (str) {
         case 'bg':
@@ -428,6 +467,15 @@ export default {
         this.dateFromShort = moment().format('DD-MM-YYYY')
         this.dateToShort = moment().format('DD-MM-YYYY')
       }
+    },
+    totalItems () {
+      console.log('###### totalItems ######')
+      var u = 0
+      for(var i = 0; i < this.currentPurchaseOrder.line_items.length; i++) {
+        u += this.currentPurchaseOrder.line_items[i].quantity
+      }
+      console.log('>>>>>> TOTAL : ', u)
+      return u
     }
   },
   mounted () {
@@ -437,23 +485,11 @@ export default {
     hasPoChanged () {
       return JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder)
     }
-  },
-  components: {
-    
-  },
-  watch: {
-    '$route' (to, from) {
-      console.log(' =||=====||||=====||= What\'s happening here ?!?')
-    }
-}
+  }
 }
 </script>
 
 <style>
-  .my-card-list {
-    /* display: block; */
-    padding: 10px;
-  }
   .date-ref {
     width: 100%;
   }
@@ -469,23 +505,17 @@ export default {
   }
   .my-fab-action {
     border-radius: 30px;
-    width: 140px;
+    width: 150px;
     height: 55px;
   }
   .q-fab-actions {
     margin-right: 185px;
   }
-  i.q-icon {
-    margin-right: 10px;
-  }
-  i.q-icon.q-fab-active-icon, 
-  i.q-icon.q-fab-icon {
-    margin-right: 0px;
-  }
   .my-fab-action div:nth-child(2) {
-    display: inline;
-    float: left;
+    display: block;
+    float: right;
     padding: 15px;
+    text-align: right;
   }
 
 </style>
