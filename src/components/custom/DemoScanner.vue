@@ -51,11 +51,11 @@
       </q-card>
 
       <!-- REPORT PROBLEM DIALOG BOX -->
-      <q-dialog v-model="problemBox" @ok="onOkProblem">
+      <q-dialog v-if="problemBox" v-model="problemBox" @ok="onOkProblem" @cancel="onCancelProblem">
         <span slot="title">Quantité reçue</span>
         <div slot="body">
-          <!-- <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span> -->
-          <!-- <q-slider v-model="currentEditQty_received" :min="0" :max="currentEditQty" :step="1" label snap markers /> -->
+          <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span>
+          <q-slider v-model="currentEditQty_received" :min="0" :max="currentEditQty" :step="1" label snap markers />
           <div>
             <scroll-picker
               :options="scrollPickerOptions"
@@ -69,6 +69,7 @@
           
         </div>
         <template slot="buttons" slot-scope="props">
+          <q-btn flat label="Annuler" color="primary" @click="props.cancel"/>
           <q-btn flat label="Valider" color="primary" @click="props.ok"/>
         </template>
       </q-dialog>
@@ -247,12 +248,12 @@ export default {
       problemBox: false,
       currentEditId: null,
       currentEditQty: null,
-      currentEditQty_received: null,
+      currentEditQty_received: 0,
       sendBtn: true,
       overlayFab: false,
       showTooltip: true,
-      scrollPickerOptions: [],
-      scrollVar: null,
+      scrollPickerOptions: [1,2,3,4,5,6],
+      scrollVar: 1,
       total: 0
     }
   },
@@ -296,9 +297,10 @@ export default {
           this.currentPurchaseOrder.line_items = Array.from(JSON.parse(this.currentPurchaseOrder.line_items))
           this.originalPurchaseOrder = JSON.parse(JSON.stringify(this.currentPurchaseOrder))
           //console.log('test >>>>>>> ', JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder))
-          //console.log(' ################ >> getPurchaseOrder',  this.rawResponse)
+          //console.log(' ################ >> getPurchaseOrder',  this.rawResponse)         
           for (var i =0; i < this.currentPurchaseOrder.line_items.length; i++) {
-            this.currentPurchaseOrder.line_items[i].received = null
+            if (this.currentPurchaseOrder.line_items[i].received == null)
+              this.currentPurchaseOrder.line_items[i].received = 0
           }
           this.poDisplayed = true
           this.sendBtn = true
@@ -412,18 +414,27 @@ export default {
     onCancelProblem () {
       this.currentEditQty = null
       this.currentEditQty_received = null
+      this.currentEditId = null
     },
     onOkProblem () {
+      console.log("coucou ici")
       this.currentPurchaseOrder.line_items[this.currentEditId].received = this.currentEditQty_received
       this.currentEditQty = null
       this.currentEditQty_received = null
       this.currentEditId = null
     },
     openProblemBox (id) { 
+      
+
       this.currentEditId = id
       this.currentEditQty = this.currentPurchaseOrder.line_items[id].quantity
       this.currentEditQty_received = this.currentPurchaseOrder.line_items[id].received
-      this.fillScrollPickerOptions(this.currentEditQty) 
+      
+      // var tmp = this.currentEditQty_received
+      // this.currentEditQty_received = null
+      // this.currentEditQty_received = tmp
+
+      //this.fillScrollPickerOptions(this.currentEditQty) 
       this.problemBox = true
     },
     fillScrollPickerOptions (int) {
@@ -431,6 +442,7 @@ export default {
       for (var i = 0; i < int+1; i++) {
         this.scrollPickerOptions.push(i)
       }
+      //console.log("OPTIONS >>>> ", this.scrollPickerOptions)
     },
     getTheColor (obj, str) {
       switch (str) {
