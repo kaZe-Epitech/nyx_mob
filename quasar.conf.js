@@ -58,8 +58,10 @@ module.exports = function (ctx) {
         'QListHeader',
         'QItem',
         'QItemMain',
-        'QField',
+        'QItemSeparator',
         'QItemSide',
+        'QItemTile',
+        'QField',
         'QUploader',
         'QChipsInput',
         'QSelect',
@@ -91,7 +93,8 @@ module.exports = function (ctx) {
         'QModal'
       ],
       directives: [
-        'Ripple'
+        'Ripple',
+        'GoBack'
       ],
       // Quasar plugins
       plugins: [

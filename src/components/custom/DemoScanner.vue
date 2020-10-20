@@ -1,40 +1,14 @@
 <template>
-  <!--
-    _ boutons du q-fab (label + taille)
-    _ overlay sous q-fab
-    _ q-spinner-dots ??
-    _ X chip "a valider", position
-    _ datepicker taille dans dialog box
-    _ X datepicker range ??
-    _ X changer couleur de la chip
-    _ envoi des données si retour a la liste ?
-    _ actualisation de la liste quand bouton "pouce vert" clické !
-    _ max height chip liste
-    _ bouton retour -> envoi serveur
-  -->
-  <!-- 
-    _ possibilité de trier les tuile dans un certain ordre
-    _ repartir les tuiles par utilisateur
-    _ ajout de produit depuis le BO (la ou reparti les utilisateurs)
-    _liste produit => toute verte si tout ok, toute orange si incomplet, grise si pas encore remplie
-        -> retire le chiffre "a verifier" on garde que la quantité
-        engrenage -> pb & coche -> valid
-
-  -->
   <q-page class="bg-grey-5">
     
 <!-- SINGLE PURCHASE ORDER -->
     <div v-if="poDisplayed" class="q-pa-xs">
-      <!-- <div class="text-center q-pa-sm">
-        <q-btn color="primary" label="Retour" @click="backToList" />
-      </div> -->
-      
       <!-- CART / COLLAPSIBLE SUPPLIER INFOS -->
       <q-card flat bordered class="bg-white q-ma-md q-pa-md">
-        <q-collapsible icon="perm_identity" :label="this.currentPurchaseOrder.supplier+' ('+goodLookingDate(this.currentPurchaseOrder.expected_date)+')'">
+        <q-collapsible icon="perm_identity" :label="this.currentPurchaseOrder.supplier">
           <div>
             <div><span class="caption">Date commande :</span> <b>{{ goodLookingDate(this.currentPurchaseOrder.expected_date) }}</b></div>
-            <div><span class="caption">Producteur :</span> <b>{{ goodLookingSupplier(this.currentPurchaseOrder.supplier) }}</b></div>
+            <div><span class="caption">Producteur :</span> <b>{{ this.currentPurchaseOrder.supplier }}</b></div>
             <div><span class="caption">Contact : </span> <b>{{ this.currentPurchaseOrder.supplier }}</b></div>
             <div><span class="caption">Numéro de commande :</span> <b>{{ this.currentPurchaseOrder.number }}</b></div>
             <div><span class="caption">Statut actuel :</span> <b>{{ this.currentPurchaseOrder.status }}</b></div>
@@ -49,23 +23,24 @@
         <!-- CART ITEMS LIST -->
         <div class="">
           <q-list class="bg-white" separator bordered striped>
-            <q-item :class="getTheColor(item, 'bg')" name="q-item-base" v-for="(item, index) in this.currentPurchaseOrder.line_items" :key="item.product_id" clickable v-ripple style="padding: 8px; min-height:60px;">
-              <q-item-section color="yellow" name="item_name" style="max-width: 150px;">
-                <q-item-label :style="getTheColor(item, 'name')" name="q-item-label">{{ item.full_title }}</q-item-label>
-              </q-item-section>
+            <q-item :class="getTheColor(item, 'bg')" v-for="(item, index) in this.currentPurchaseOrder.line_items" :key="item.product_id" clickable v-ripple style="padding: 8px; min-height:60px;">
+              <div color="yellow" style="max-width: 150px;">
+                <div :style="getTheColor(item, 'name')" name="q-item-label">{{ item.full_title }}</div>
+              </div>
               <div class="absolute-right">
-                <q-item-section name="item_qty" class="q-mr-xs text-right" style="display: inline-block; min-width: 31px;">
+                <div class="q-mr-xs text-right" style="display: inline-block; min-width: 31px;">
                   <q-chip small pointing="right" style="width: 45px" :color="getTheColor(item, 'chip')">
                     <b>{{ item.quantity }}</b>
                   </q-chip>
-                </q-item-section>
-                <q-item-section v-model="item.received" name="item_qty_received" class="q-mr-xs text-center" style="display: inline-block; min-width: 31px;">
+                </div>
+                <div v-model="item.received" class="q-mr-xs text-center" style="display: inline-block; min-width: 31px;">
                   {{ item.received }}
-                </q-item-section>
-                <q-item-section name="icon_ok">
-                  <q-btn size="30px" flat dense square icon="settings" :color="getTheColor(item, 'btn')" @click="openProblemBox(index)" />
+                </div>
+                <div>
+                  <!-- old icon : settings -->
+                  <q-btn size="30px" flat dense square icon="priority_high" :color="getTheColor(item, 'btn')" @click="openProblemBox(index)" />
                   <q-btn size="30px" flat dense square icon="done" :color="getTheColor(item, 'btn')" @click="lineIsOk(index)" />
-                </q-item-section>
+                </div>
               </div>
             </q-item>          
           </q-list>
@@ -81,16 +56,17 @@
       <q-dialog v-model="problemBox" prevent-close @cancel="onCancelProblem" @ok="onOkProblem">
         <span slot="title">Quantité reçue</span>
         <div slot="body" class="q-py-lg">
-          <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span>
-          <q-slider
+          <!-- <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span> -->
+          <!-- <q-slider v-model="currentEditQty_received" :min="0" :max="currentEditQty" :step="1" label snap markers /> -->
+          <div>
+            <scroll-picker
+            :options="scrollPickerOptions"
             v-model="currentEditQty_received"
-            :min="0"
-            :max="currentEditQty"
-            :step="1"
-            label
-            snap
-            markers
-          />
+            :drag-sensitivity="1"
+            :touch-sensitivity="1"
+            :scroll-sensitivity="0.5" />
+          </div>
+          
         </div>
         <template slot="buttons" slot-scope="props">
           <q-btn flat label="Annuler" color="primary" @click="props.cancel" />
@@ -100,21 +76,22 @@
 
     </div>
 
-    <div v-else>
 <!-- PURCHASE ORDERS LIST -->
+    <div v-else>
+
       <!-- REFERENCE DATE -->
       <div class="date-ref bg-grey-8 q-py-sm q-px-md text-white">
           <div v-if="this.dateFromShort === this.dateToShort" class="text-center">
-            Date : {{ goodLookingDate(this.dateFrom) }}
+            Date : <b>{{ goodLookingDate(this.dateFrom) }}</b>
           </div>
           <div v-else class="text-center">
-            Période : du {{ goodLookingDate(this.dateFrom) }} au {{ goodLookingDate(this.dateTo) }}
+            Période : du <b>{{ goodLookingDate(this.dateFrom) }}</b> au <b>{{ goodLookingDate(this.dateTo) }}</b>
           </div>
       </div>
       <!-- INFINITE SCROLL / PO LIST-->
       <q-infinite-scroll :handler="loadMore" v-if="poList.length">
         <div v-for="purchaseOrder in poList" :key="purchaseOrder.id" class="q-py-xs q-px-sm">
-          <q-card class="bg-white">
+          <q-card class="bg-white" style="max-width: 700px;">
             <div v-ripple @click="getPurchaseOrder(purchaseOrder._id, purchaseOrder._index)" class="cursor-pointer relative-position ">
               <q-card-main style="padding: 10px; display: flex;">
                 <div class="caption" style="width: 50px; margin-right: 5px;">
@@ -148,46 +125,44 @@
 
     <!-- STICKY BUTTON -->
     <q-fab v-if="!poDisplayed" v-model="overlayFab" color="primary" icon="calendar_today" direction="up" class="fixed" style="right: 25px; bottom: 25px; z-index: 10;" @click="toggleFab">
-      <q-fab-action color="primary" @click="onToday" icon="today" size="xl">
-        <q-tooltip v-model="showTooltip" anchor="center left" self="center right" :offset="[20, 0]">
-          Aujourd'hui
-        </q-tooltip>
+      <!-- TODAY BUTTON -->
+      <q-fab-action color="primary" @click="onToday" icon="today" class="my-fab-action">
+        Aujourd'hui
       </q-fab-action>
-
-      <q-fab-action color="primary" @click="pickDateDialog = true" icon="event">
+      <!-- DATE BUTTON -->
+      <q-fab-action color="primary" @click="pickDateDialog = true" icon="event" class="my-fab-action">
         Date
       </q-fab-action>
-
-      <q-fab-action color="primary" @click="pickRangeDateDialog = true" icon="date_range">
+      <!-- RANGE DATE BUTTON -->
+      <q-fab-action color="primary" @click="pickRangeDateDialog = true" icon="date_range" class="my-fab-action">
         Période
       </q-fab-action>
     </q-fab>
 
     <!-- DATE PICKER DIALOG BOX -->
-    <q-dialog v-model="pickDateDialog" prevent-close @cancel="onCancelDatePicker" @ok="onOkDatePicker">
-        <span slot="title">Choisir un jour</span>
-        <div slot="body">
-          <q-datetime-picker v-model="curSelDate" type="date" />
-        </div>
-        <template slot="buttons" slot-scope="props">
-          <q-btn flat label="Annuler" color="primary" @click="props.cancel" />
-          <q-btn flat label="Valider" color="primary" @click="props.ok"/>
-        </template>
+    <q-dialog v-model="pickDateDialog" @ok="onOkDatePicker">
+      <span slot="title">Choisir un jour</span>
+      <div slot="body">
+        <q-datetime v-model="curSelDate" format="DD/MM/YYYY" />
+      </div>
+      <template slot="buttons" slot-scope="props">
+        <q-btn flat label="Valider" color="primary" @click="props.ok"/>
+      </template>
     </q-dialog>
 
     <!-- RANGE DATE PICKER DIALOG BOX -->
-    <q-dialog v-model="pickRangeDateDialog" prevent-close @cancel="onCancelRangeDatePicker" @ok="onOkRangeDatePicker">
-        <span slot="title">Choisir une période</span>
-        <div slot="body">
-          <q-input v-model="dateFrom" float-label="Date début" placeholder="Gigi" />
-          <q-input v-model="dateTo" float-label="Date fin" placeholder="Gigi" />
-        </div>
-        <template slot="buttons" slot-scope="props">
-          <q-btn flat label="Annuler" color="primary" @click="props.cancel" />
-          <q-btn flat label="Valider" color="primary" @click="props.ok"/>
-        </template>
+    <q-dialog v-model="pickRangeDateDialog" @ok="onOkRangeDatePicker">
+      <span slot="title">Choisir une période</span>
+      <div slot="body">
+        <q-datetime v-model="dateFrom" stack-label="Date de début" />
+        <q-datetime v-model="dateTo" stack-label="Date de fin" />
+      </div>
+      <template slot="buttons" slot-scope="props">
+        <q-btn flat label="Valider" color="primary" @click="props.ok"/>
+      </template>
     </q-dialog>
 
+    <!-- OVERLAY POUR LE FAB -->
     <template>
       <q-modal v-model="overlayFab" minimized class="my-modal" style="z-index: 1;">
       </q-modal>
@@ -199,6 +174,11 @@
 <script>
 import moment from 'moment'
 import axios from 'axios'
+import Vue from "vue"
+import VueScrollPicker from "vue-scroll-picker"
+import "vue-scroll-picker/dist/style.css"
+
+Vue.use(VueScrollPicker)
 
 export default {
   name: 'PageIndex',
@@ -259,48 +239,21 @@ export default {
         { name: 'received', required: false, label: 'Qté reçue', align: 'left', field: 'received', sortable: false, style: 'width: 40px' },
         { name: 'action', required: false, label: 'Actions', align: 'right', field: 'action', sortable: false, style: 'width: 100px' }
       ],
-      pagination: { rowsPerPage: 250 },
-      fakeCart: [
-        {'full_title':'Bave (170g)', 'quantity':12 },
-        {'full_title':'Bave (170g)', 'quantity':154 },
-        {'full_title':'Bavette de boeuf (170g)', 'quantity':3 },
-        {'full_title':'Blanc de poulet (lot de 2x200g)', 'quantity':11 },
-        {'full_title':'Blanquette de veau (500g)', 'quantity':1 },
-        {'full_title':'Boudin noir (150g)', 'quantity':1 },
-        {'full_title':'Boeuf bourguignon (1kg)', 'quantity':1 },
-        {'full_title':'Chair à saucisse (250g)', 'quantity':3 },
-        {'full_title':'Choucroute pour 2 personnes', 'quantity':1 },
-        {'full_title':'Cordon bleu de dinde maison (lot de 2x170g)', 'quantity':2 },
-        {'full_title':'Côte de porc (250g)', 'quantity':2 },
-        {'full_title':'Entrecôte de boeuf (250g)', 'quantity':2 },
-        {'full_title':'Escalope de dinde fermière (lot de 2x200g)', 'quantity':2 },
-        {'full_title':'Escalope de veau (lot de 2x200g)', 'quantity':1 },
-        {'full_title':'Filet mignon de porc (500g)', 'quantity':1 },
-        {'full_title':'Jambon cru des Ardenne IGP (lot de 4 tranches x30g)', 'quantity':3 },
-        {'full_title':'Jambon cuit (lot de 4 tranches x80g)', 'quantity':1 },
-        {'full_title':'Lard fumé (500g)', 'quantity':1 },
-        {'full_title':'Poire de boeuf (250g)', 'quantity':2 },
-        {'full_title':'Rôti de boeuf Rumsteak (500g)', 'quantity':1 },
-        {'full_title':'Saucisse de Montbelliard IGP (180g)', 'quantity':1 },
-        {'full_title':'Saucisse de Toulouse (lot de 2x140g)', 'quantity':1 },
-        {'full_title':'Saucisses chipolatas (lot de 4x80g)', 'quantity':3 },
-        {'full_title':'Sauté de porc (1kg)', 'quantity':1 },
-        {'full_title':'Terrine de campagne (180g)', 'quantity':2 },
-        {'full_title':'Tranche de gigot (250g)', 'quantity':2 }
-      ],
+      pagination: { rowsPerPage: 500 },
       problemBox: false,
       currentEditId: null,
       currentEditQty: null,
       currentEditQty_received: null,
       sendBtn: true,
       overlayFab: false,
-      showTooltip: true
+      showTooltip: true,
+      scrollPickerOptions: [1, 2, 3, 4, 5]
     }
   },
   methods: {
     getPoList () {
-      console.log(' >>>>> AVANT ENVOI : dateFrom/dateTo : ' + this.dateFrom + '/' + this.dateTo)
-      
+      //console.log(' >>>>> AVANT ENVOI : dateFrom/dateTo : ' + this.dateFrom + '/' + this.dateTo)
+      this.isDateCorrect()
       this.queryPoList.query.bool.must[0].range.expected_date.gte = this.dateFrom
       this.queryPoList.query.bool.must[0].range.expected_date.lte = this.dateTo
       
@@ -313,20 +266,16 @@ export default {
         .then( response => {
           this.poList = response.data.records 
           console.log("Data succesfully received : ", this.poList)
-          //this.$q.loading.hide()
+          this.$q.loading.hide()
         }).catch( error => {
           console.log('| getPoList / POST | UN PROBLEME EST SURVENU : ', error)
-          
+          this.$q.loading.hide()
         })
-      this.$q.loading.hide()
+      
     },
     getPurchaseOrder (id, index) {
-      console.log(' >>>>>>>>>>>> getPurchaseOrder id: ', id)
-      console.log(' >>>>>>>>>>>> getPurchaseOrder index: ', index)
-
-      this.poDisplayed = true
-      this.sendBtn = true
-      
+      //console.log(' ################ >> getPurchaseOrder [id: '+ id +'] & [index: '+ index +']')
+    
       var url = this.$store.getters.apiurl + "generic/" + 
         index + "/" + id + "?token=" + this.$store.getters.creds.token
       //console.log('url: ', url)
@@ -335,34 +284,22 @@ export default {
       this.timer = setTimeout(() => { this.timer = void 0 }, 4500)
       axios.get(url)
         .then( response => {
-          //console.log("response : ", response)
           this.currentPurchaseOrder = response.data.data._source
-          console.log('toto', this.currentPurchaseOrder.line_items)
           this.currentPurchaseOrder.line_items = Array.from(JSON.parse(this.currentPurchaseOrder.line_items))
-          //console.log('getPO  sans >>>>>>> ', this.currentPurchaseOrder)
           this.originalPurchaseOrder = JSON.parse(JSON.stringify(this.currentPurchaseOrder))
-          
-          console.log('test >>>>>>> ', JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder))
-
-          //console.log('getPO ori >>> ', this.originalCart)
-          //console.log(' >>>>>>>>>>>> getPurchaseOrder successfully received data : ', this.currentPurchaseOrder)
-          //console.log(' >>>>>>>>>>>> getPurchaseOrder panier inspection : ', this.currentCart)
-          //this.currentCart.forEach(item => item['qty_received'] = '?')
-          console.log(' ############ line items : ', this.currentPurchaseOrder.line_items)
+          //console.log('test >>>>>>> ', JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder))
           for (var i =0; i < this.currentPurchaseOrder.line_items.length; i++) {
             this.currentPurchaseOrder.line_items[i].received = null
           }
-          
-          
-          
-          //console.log('array from >> ', Array.from(this.currentPurchaseOrder.line_items))
-          
-          console.log(' >>>>>>>>>>>> getPurchaseOrder panier POST foreach : ', this.currentPurchaseOrder.line_items)
+          this.poDisplayed = true
+          this.sendBtn = true
+          this.$q.loading.hide()
         })
         .catch( error => {
           console.log('| getPurchaseOrder / GET| UN PROBLEME EST SURVENU : ', error)
+          this.$q.loading.hide()
         })
-        this.$q.loading.hide()
+        
     },
     onToday () {
       this.dateFrom = moment().startOf('day').unix()*1000
@@ -371,16 +308,9 @@ export default {
       this.dateToShort = moment().format('DD-MM-YYYY')
       this.getPoList()
     },
-    onRange () {
-      console.log('Button <range> clicked')
-    },
     goodLookingDate (date) {
       moment.locale('fr')
       return moment(date).format('DD MMMM YYYY')
-    },
-    goodLookingSupplier(str) {
-      const words = str.split(' - ')
-      return words[1]
     },
     loadMore: function(index, done) {
       // index - called for nth time
@@ -401,18 +331,17 @@ export default {
       // //this.items.push({}, {}, {}, {}, {})
       // console.log('items contient maintenant ' + this.items.length + ' elements.')
     },
-    onCancelDatePicker () {
-    },
     onOkDatePicker () {
       this.dateFrom = moment(this.curSelDate).startOf('day').unix()*1000
       this.dateTo = moment(this.curSelDate).endOf('day').unix()*1000
-      this.dateFromShort = moment().format('DD-MM-YYYY')
-      this.dateToShort = moment().format('DD-MM-YYYY')
+      this.dateFromShort = moment(this.dateFrom).format('DD-MM-YYYY')
+      this.dateToShort = moment(this.dateTo).format('DD-MM-YYYY')
       this.getPoList()
     },
-    onCancelRangeDatePicker () {
-    },
     onOkRangeDatePicker () {
+      this.dateFromShort = moment(this.dateFrom).format('DD-MM-YYYY')
+      this.dateToShort = moment(this.dateTo).format('DD-MM-YYYY')
+      this.getPoList()
     },
     backToList () {
       this.poDisplayed = false
@@ -431,7 +360,7 @@ export default {
       if (str === 'fully_collected') return 'green'
     },
     lineIsOk (index) {
-      console.log('LINE IS OK >>>> ', this.currentPurchaseOrder.line_items)
+      //console.log('LINE IS OK >>>> ', this.currentPurchaseOrder.line_items)
       this.currentPurchaseOrder.line_items[index].received = this.currentPurchaseOrder.line_items[index].quantity
       //console.log('we want this line all ok', this.currentCart[index])
       var tmp = JSON.parse(JSON.stringify(this.currentPurchaseOrder))
@@ -441,16 +370,11 @@ export default {
     onCancelProblem () {
       this.currentEditQty = null
       this.currentEditQty_received = null
-      //console.log('Josephine a dit /cancel/ !')
     },
     onOkProblem () {
-      console.log('ON OK PROBLEM - ENTER')
-      //this.currentCart[this.currentEditId].qty_received = this.currentEditQty_received
       this.currentPurchaseOrder.line_items[this.currentEditId].received = this.currentEditQty_received
       this.currentEditQty = null
       this.currentEditQty_received = null
-      console.log('Josephine a dit /ok/ !', this.currentPurchaseOrder.line_items)
-      //this.checkForFinishedOrder()
     },
     openProblemBox (id) {
       this.problemBox = true
@@ -465,10 +389,10 @@ export default {
       // modifier le status du bon
       this.$q.notify({ message: 'Bon de commande sauvegardé', timeout: 1000, color: 'green' })
     },
-    getSupplierName () {
-      console.log('getgetget : ', this.currentPurchaseOrder)
-      return this.currentPurchaseOrder
-    },
+    // getSupplierName () {
+    //   console.log('!!!!!!!!!!!! getgetget : ', this.currentPurchaseOrder)
+    //   return this.currentPurchaseOrder
+    // },
     getTheColor (obj, str) {
       switch (str) {
         case 'bg':
@@ -495,23 +419,33 @@ export default {
       }
     },
     toggleFab () {
-      //console.log("AKUNA MATATA")
-      //this.overlayFab = !this.overlayFab
       this.showTooltip != this.showTooltip 
+    },
+    isDateCorrect () {
+      if (isNaN(this.dateFrom) && isNaN(this.dateTo)) {
+        this.dateFrom = moment().startOf('day').unix()*1000
+        this.dateTo = moment().endOf('day').unix()*1000
+        this.dateFromShort = moment().format('DD-MM-YYYY')
+        this.dateToShort = moment().format('DD-MM-YYYY')
+      }
     }
   },
   mounted () {
-    this.dateFrom = moment().startOf('day').unix()*1000
-    this.dateTo = moment().endOf('day').unix()*1000
-    this.dateFromShort = moment().format('DD-MM-YYYY')
-    this.dateToShort = moment().format('DD-MM-YYYY')
-    this.getPoList()
+    this.onToday()
   },
   computed: {
     hasPoChanged () {
       return JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder)
     }
-  }
+  },
+  components: {
+    
+  },
+  watch: {
+    '$route' (to, from) {
+      console.log(' =||=====||||=====||= What\'s happening here ?!?')
+    }
+}
 }
 </script>
 
@@ -529,4 +463,29 @@ export default {
   .my-modal {
     background-color: rgba(0, 0, 0, 0.562)
   }
+  .my-dialog /deep/ .modal-content {
+    width: 95vw;
+    height: 90vh;
+  }
+  .my-fab-action {
+    border-radius: 30px;
+    width: 140px;
+    height: 55px;
+  }
+  .q-fab-actions {
+    margin-right: 185px;
+  }
+  i.q-icon {
+    margin-right: 10px;
+  }
+  i.q-icon.q-fab-active-icon, 
+  i.q-icon.q-fab-icon {
+    margin-right: 0px;
+  }
+  .my-fab-action div:nth-child(2) {
+    display: inline;
+    float: left;
+    padding: 15px;
+  }
+
 </style>
