@@ -90,11 +90,13 @@ module.exports = function (ctx) {
         'QPopupEdit',
         'QSlider',
         'QCollapsible',
-        'QModal'
+        'QModal',
+        'QActionSheet'
       ],
       directives: [
         'Ripple',
-        'GoBack'
+        'GoBack',
+        'CloseOverlay'
       ],
       // Quasar plugins
       plugins: [
