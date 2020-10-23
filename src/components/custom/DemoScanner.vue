@@ -60,22 +60,10 @@
       <q-dialog v-model="problemBox" @ok="onOkProblem" @cancel="onCancelProblem">
         <span slot="title">Quantité reçue</span>
         <div slot="body">
-          <!-- <span class="on-left">0</span><span class="float-right">{{ currentEditQty }}</span>
-          <q-slider v-model="currentEditQty_received" :min="0" :max="currentEditQty" :step="1" label snap markers /> -->
           <div class="flex-center row q-my-lg">
-            <!-- <q-input v-model="currentEditQty_received" type="number" clear-value stack-label="Stack Label" /> -->
-
-            <q-btn round color="primary" @click="onChangeQty(-1)">
+            <q-btn round color="primary" @click="onChangeQty(-1)" :repeat-timeout="100">
               <q-icon name="remove" />
             </q-btn>
-
-            <!-- <div class="q-mx-lg q-px-md q-display-1">{{ currentEditQty_received }}</div> -->
-            <!-- <q-input
-              v-model="currentEditQty_received"
-              type="number"
-              float-label="Textarea"
-              :max-height="100"
-            /> -->
             <q-input
               v-model="currentEditQty_received"
               align='center'
@@ -88,10 +76,9 @@
               @focus="focusField"
               @blur="blurField"
             />
-            <q-btn round color="primary" @click="onChangeQty(1)">
+            <q-btn round color="primary" @click="onChangeQty(1)" :repeat-timeout="100">
               <q-icon name="add" />
             </q-btn>
-
           </div>
         </div>
         <template slot="buttons" slot-scope="props">
@@ -126,7 +113,7 @@
                     </q-item-main>
                     <q-item-side>
                       <div>
-                        <q-btn color="primary" round icon="add" @click="rawQuantity(index)"  />
+                        <q-btn color="primary" round icon="add" @click="openRawQuantity(index)"  />
                       </div>
                     </q-item-side>
                   </q-item> 
@@ -162,6 +149,9 @@
         <span slot="title">Indiquez la quantité</span>
         <div slot="body">
           <div class="flex-center row q-my-lg">
+            <q-btn round color="primary" @click="onChangeRawQty(-1)" :repeat-timeout="100">
+              <q-icon name="remove" />
+            </q-btn>
             <q-input
               v-model="rawQty"
               align='center'
@@ -173,6 +163,13 @@
               @focus="focusRawQty"
               @blur="blurRawQty"
             />
+            <q-btn round color="primary" @click="onChangeRawQty(1)" :repeat-timeout="100">
+              <q-icon name="add" />
+            </q-btn>
+            <!-- TEST APPUI LONG -->
+            <!-- <q-btn round color="primary" @click="clickHandler" :repeat-timeout="100">
+              <q-icon name="add_circle_outline" />
+            </q-btn> -->
           </div>
         </div>
         <template slot="buttons" slot-scope="props">
@@ -389,7 +386,7 @@ export default {
       productSearch: false,
       noProducts: false,
       rawQuantityBox: false,
-      rawQty: 0,
+      rawQty: 1,
       rawIndex: null
     }
   },
@@ -645,7 +642,7 @@ export default {
       this.currentEditId = null
     },
     onCancelRaw () {
-      this.rawQty = null
+      this.rawQty = 1
     },
     openProblemBox (id) {
       this.currentEditId = id
@@ -757,6 +754,13 @@ export default {
       if (this.rawQty <= 0)
         this.rawQty = 0
       
+      // need to check if the product isn't already in cart
+      if (this.alreadyInCart(this.productList[this.rawIndex].title)) {
+        this.$q.notify({ message: 'Le produit est déjà dans le bon de commande !', timeout: 5000, color: 'orange' })
+        return
+      }
+      
+
       this.currentPurchaseOrder.line_items.push({
         'full_title': this.productList[this.rawIndex].title,
         'product_id': '',
@@ -764,9 +768,11 @@ export default {
         'received': this.rawQty,
         'variant_id': ''
       })
+      this.$q.notify({ message: 'Produit ajouté au bon de commande !', timeout: 5000, color: 'green' })
+
       this.rawQuantityBox = false
       this.rawIndex = null
-      this.rawQuantity = 0
+      this.rawQty = 1
     },
     prepareProducts () {
       console.log("//// PREPARE_PRODUCTS nb de produits : ", this.productList.length)
@@ -809,16 +815,33 @@ export default {
       else if (!foundQty && foundMinusOne) return 'passage'
       else return 'fini'
     },
-    rawQuantity (id) {
+    openRawQuantity (id) {
       this.rawIndex = id
+      this.rawQty = 1
       this.rawQuantityBox = true
     },
+    onChangeRawQty (i) {
+      this.rawQty += i
+      if (this.rawQty < 1)
+        this.rawQty = 1
+      if (this.rawQty > 5000)
+        this.rawQty = 5000
+    },
     focusRawQty () {
-      this.rawQuantity = ''
+      this.rawQty = ''
     },
     blurRawQty () {
-      if (this.rawQuantity === '')
-        this.rawQuantity = 0
+      if (this.rawQty === '')
+        this.rawQty = 1
+    },
+    alreadyInCart (str) {
+      console.log('already In Cart / we re looking for :  ', str)
+      console.log('already In Cart : ', this.currentPurchaseOrder.line_items)
+      for(var i = 0; i < this.currentPurchaseOrder.line_items.length; i++)  {
+        if (this.currentPurchaseOrder.line_items[i].full_title == str) 
+          return true
+      }
+      return false
     }
   },
   // #endregion
