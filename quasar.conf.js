@@ -91,7 +91,8 @@ module.exports = function (ctx) {
         'QSlider',
         'QCollapsible',
         'QModal',
-        'QActionSheet'
+        'QActionSheet',
+        'QAlert'
       ],
       directives: [
         'Ripple',

@@ -6,42 +6,90 @@
       <q-card flat bordered class="bg-white q-ma-xs q-pa-xs">
         <q-collapsible
           icon="perm_identity"
-          :label="this.currentPurchaseOrder.supplier"
+          :label="capitalizeFistLetter(this.currentPurchaseOrder.supplier)"
         >
-          <q-card class="q-pa-xs">
-            <div>
-              <span class="caption">Date commande : </span>
-              <b>{{
-                goodLookingDate(this.currentPurchaseOrder.expected_date)
-              }}</b>
+          <q-card class="q-pa-sm">
+            <div class="row flex-center">
+              <div>
+                <h5>
+                  {{ capitalizeFistLetter(this.currentPurchaseOrder.supplier) }}
+                </h5>
+              </div>
             </div>
-            <div>
-              <span class="caption">Producteur : </span>
-              <b>{{ this.currentPurchaseOrder.supplier }}</b>
+            <q-card-separator />
+            <div class="row q-pa-sm q-mb-md commande">
+              <div class="col-6">
+                <div>
+                  <span class="caption">Date commande : </span>
+                  <b>
+                    {{
+                      goodLookingDate(this.currentPurchaseOrder.expected_date)
+                    }}
+                  </b>
+                </div>
+                <div>
+                  <span class="caption">Statut actuel : </span>
+                  <b>{{ this.currentPurchaseOrder.status }}</b>
+                </div>
+              </div>
+              <div class="col-6">
+                <div>
+                  <span class="caption">Numéro de commande : </span>
+                  <b>{{ this.currentPurchaseOrder.number }}</b>
+                </div>
+                <div>
+                  <span class="caption">Type de bon : </span>
+                  <b>{{ this.currentPurchaseOrder.type }}</b>
+                </div>
+              </div>
             </div>
-            <div>
-              <span class="caption">Contact : </span>
-              <b>{{ this.currentPurchaseOrder.supplier }}</b>
+            <q-card-separator />
+            <div class="row q-pa-sm q-mb-md contact">
+              <div class="col-6">
+                <div>
+                  <span class="caption">Contact : </span>
+                  <b>{{ this.currentPurchaseOrder.sales_contact_name }}</b>
+                </div>
+                <div>
+                  <span class="caption">Téléphone : </span>
+                  <b>{{ this.currentPurchaseOrder.sales_phone_number }}</b>
+                </div>
+                <div>
+                  <span class="caption">Email : </span>
+                  <b>{{ this.currentPurchaseOrder.sales_contact_email }}</b>
+                </div>
+              </div>
+              <div class="col-6">
+                <div>
+                  <span class="caption">Adresse : </span>
+                  <b>{{ this.currentPurchaseOrder.address_line_1 }}</b>
+                </div>
+                <div>
+                  <b
+                    >{{ this.currentPurchaseOrder.post_code }}
+                    {{ this.currentPurchaseOrder.city }}</b
+                  >
+                </div>
+                <div>
+                  <span class="caption">Complément : </span>
+                  <b>{{ this.currentPurchaseOrder.address_line_2 }}</b>
+                </div>
+              </div>
             </div>
-            <div>
-              <span class="caption">Numéro de commande : </span>
-              <b>{{ this.currentPurchaseOrder.number }}</b>
-            </div>
-            <div>
-              <span class="caption">Statut actuel : </span>
-              <b>{{ this.currentPurchaseOrder.status }}</b>
-            </div>
-            <div>
-              <span class="caption">Type de bon : </span>
-              <b>{{ this.currentPurchaseOrder.type }}</b>
-            </div>
-            <div>
-              <span class="caption">Nb d'items : </span>
-              <b>{{ this.currentPurchaseOrder.line_items.length }}</b>
-            </div>
-            <div>
-              <span class="caption">Nb total de produits : </span>
-              <b>{{ this.total }}</b>
+            <q-card-separator />
+            <div class="row q-pa-sm q-mb-sm items">
+              <div class="col-6">
+                <div>
+                  <span class="caption">Nb d'items : </span>
+                  <b>{{ this.currentPurchaseOrder.line_items.length }}</b>
+                </div>
+              </div>
+              <div class="col-6">
+                <div>
+                  <span class="caption">Nb total de produits : </span>
+                  <b>{{ this.total }}</b>
+                </div>
+              </div>
             </div>
             <q-card-separator />
             <q-btn
@@ -57,7 +105,7 @@
               class="full-width q-my-sm"
               label="Envoyer sur slack"
               icon="chat_bubble_outline"
-              @click="addProduct"
+              @click="showSlackMessage"
               size="lg"
             />
             <q-btn
@@ -71,8 +119,20 @@
           </q-card>
         </q-collapsible>
 
-        <!-- CART ITEMS LIST -->
-        <div>
+        <div class="">
+          <!-- ALERT BOX -->
+          <div class="q-my-sm">
+            <q-alert
+              v-if="this.currentPurchaseOrder.comment"
+              type="info"
+              icon="message"
+              style="width: 75%; margin: auto;"
+            >
+              <span>{{ this.currentPurchaseOrder.comment }}</span>
+            </q-alert>
+          </div>
+
+          <!-- CART ITEMS LIST -->
           <q-list class="bg-white" separator bordered>
             <q-item
               :class="getTheColor(item, 'bg')"
@@ -142,9 +202,10 @@
             label="Valider"
             icon-right="send"
             color="primary"
-            class="q-mx-md  q-my-md"
-            @click="backToList"
+            class="q-mx-md q-my-md"
+            @click="validateOrder"
             size="md"
+            :disable="disableValidate"
           />
           <!-- <q-btn label="Valider le bon" color="light-blue-2" icon-right="send" class="q-mx-lg" :disable="!hasPoChanged" @click="sendData" /> -->
         </div>
@@ -200,11 +261,10 @@
       <!-- COMMENT THE ORDER -->
       <q-modal v-model="orderCommentBox" minimized>
         <div style="padding: 15px">
-          Here's the comment form
           <q-input
             v-model="orderComment"
             type="textarea"
-            float-label="Ecrivez votre commentaire"
+            placeholder="Votre commentaire..."
             :max-height="100"
             rows="7"
             :count="300"
@@ -220,11 +280,47 @@
         </div>
       </q-modal>
 
+      <!-- SEND A MESSAGE ON SLACK -->
+      <q-modal v-model="slackPushMessageBox" minimized>
+        <div style="padding: 15px">Envoyer un message sur slack</div>
+        <div class="q-px-md" style="color:red;">Channel : #appro</div>
+        <div class="q-px-md" style="color:blue;">
+          [
+          {{ capitalizeFistLetter(this.$store.getters.creds.user.firstname) }} |
+          {{ capitalizeFistLetter(this.currentPurchaseOrder.supplier) }} ]
+        </div>
+        <div style="padding: 15px">
+          <q-input
+            v-model="slackPushMessage"
+            type="textarea"
+            placeholder="Tapez votre message..."
+            :max-height="100"
+            rows="7"
+            :count="300"
+          />
+          <q-btn
+            class="q-my-md float-right"
+            color="primary"
+            label="Envoyer"
+            icon-right="send"
+            @click="
+              sendSlackMsg(
+                '#appro',
+                currentPurchaseOrder.supplier,
+                currentPurchaseOrder.number,
+                currentPurchaseOrder.expected_date
+              )
+            "
+            size="md"
+          />
+        </div>
+      </q-modal>
+
       <!-- ADD A RAW PRODUCT -->
       <q-modal v-model="productSearch" maximized>
         <div style="padding: 15px">
           <div class="q-display-1 q-mb-md" style="max-width: 280px;">
-            {{ currentPurchaseOrder.supplier }}
+            {{ capitalizeFistLetter(currentPurchaseOrder.supplier) }}
             <span class="absolute-top-right" style="margin: 15px;">
               <q-btn
                 color="primary"
@@ -379,6 +475,13 @@
                         {{ checkNumber(purchaseOrder._source.number) }}
                       </span>
                     </div>
+                    <div style="min-width: 40px; text-align: center;">
+                      <q-icon
+                        v-if="purchaseOrder._source.comment"
+                        color="white"
+                        name="message"
+                      />
+                    </div>
                     <div style="min-width: 120px; text-align: right;">
                       <q-chip
                         v-if="isThereChip(purchaseOrder._source.status)"
@@ -525,10 +628,10 @@
 
     <!-- DATE PICKER DIALOG BOX -->
     <q-dialog v-model="pickDateDialog" @ok="onOkDatePicker">
-      <span slot="title">Choisir un jour</span>
+      <!-- <span slot="title">Choisir un jour</span> -->
       <div
         slot="title"
-        style="height: 430px; min-height: 430px !important; width: 310px; min-width: 310px !important;"
+        style="height: 450px; min-height: 450px !important; width: 330px; min-width: 330px !important;"
       >
         <q-datetime-picker v-model="curSelDate" format="DD/MM/YYYY" />
       </div>
@@ -597,7 +700,12 @@ export default {
             "type",
             "expected_date",
             "supplier",
-            "line_items"
+            "line_items",
+            "comment",
+            "units_ordered",
+            "units_received",
+            "updated_at",
+            "validated"
           ]
         },
         query: {
@@ -705,7 +813,10 @@ export default {
       rawQty: 1,
       rawIndex: null,
       orderCommentBox: false,
-      orderComment: null
+      orderComment: null,
+      slackPushMessageBox: false,
+      slackPushMessage: null,
+      disableValidate: true
     };
   },
   // #endregion
@@ -732,7 +843,8 @@ export default {
         })
         .then(response => {
           this.poList = response.data.records;
-          console.log("PoList response : ", this.poList);
+          console.log("PoList full response : ", response);
+          //console.log("TEST-O-CON : ", this.poList[10]);
 
           this.checkCustomFields();
 
@@ -775,24 +887,26 @@ export default {
             JSON.parse(this.currentPurchaseOrder.line_items)
           );
           //console.log('test >>>>>>> ', JSON.stringify(this.currentPurchaseOrder) != JSON.stringify(this.originalPurchaseOrder))
-          //console.log(" ############# >> getPurchaseOrder", this.rawResponse);
+          console.log(" ############# >> getPurchaseOrder", this.rawResponse);
 
           // add line_items.received field if it doesn't exist yet
-          for (
-            var i = 0;
-            i < this.currentPurchaseOrder.line_items.length;
-            i++
-          ) {
-            if (this.currentPurchaseOrder.line_items[i].received == null)
-              this.currentPurchaseOrder.line_items[i].received = -1;
-          }
+          // for (
+          //   var i = 0;
+          //   i < this.currentPurchaseOrder.line_items.length;
+          //   i++
+          // ) {
+          //   if (this.currentPurchaseOrder.line_items[i].received == null)
+          //     this.currentPurchaseOrder.line_items[i].received = -1;
+          // }
           // add units_ordered & units_received if it doesn't exist yet
-          if (this.currentPurchaseOrder.units_ordered == null)
-            this.currentPurchaseOrder.units_ordered = -1;
-          if (this.currentPurchaseOrder.units_received == null)
-            this.currentPurchaseOrder.units_received = -1;
-          if (this.currentPurchaseOrder.cart_status == null)
-            this.currentPurchaseOrder.cart_status = null;
+          // if (this.currentPurchaseOrder.units_ordered == null)
+          //   this.currentPurchaseOrder.units_ordered = -1;
+          // if (this.currentPurchaseOrder.units_received == null)
+          //   this.currentPurchaseOrder.units_received = -1;
+          // if (this.currentPurchaseOrder.cart_status == null)
+          //   this.currentPurchaseOrder.cart_status = null;
+          this.checkCustomFieldsOrder();
+
           console.log("POST RECEIVED PROCESSING", this.currentPurchaseOrder);
 
           this.originalPurchaseOrder = JSON.parse(
@@ -829,14 +943,57 @@ export default {
           this.poList[i]._source.validated = null;
       }
     },
-    validateOrder() {},
+    checkCustomFieldsOrder() {
+      console.log("customFieldsOrder : ", this.currentPurchaseOrder);
+      if (this.currentPurchaseOrder.units_ordered == null)
+        this.currentPurchaseOrder.units_ordered = -1;
+      if (this.currentPurchaseOrder.units_received == null)
+        this.currentPurchaseOrder.units_received = -1;
+      if (this.currentPurchaseOrder.cart_status == null)
+        this.currentPurchaseOrder.cart_status = "empty";
+      if (this.currentPurchaseOrder.units_received == null)
+        this.currentPurchaseOrder.units_received = -1;
+      if (this.currentPurchaseOrder.updated_at == null)
+        this.currentPurchaseOrder.updated_at = null;
+      if (this.currentPurchaseOrder.comment == null)
+        this.currentPurchaseOrder.comment = null;
+      if (this.currentPurchaseOrder.validated == null)
+        this.currentPurchaseOrder.validated = null;
+    },
+    validateOrder() {
+      if (!this.disableValidate) {
+        console.log("execute order 66");
+        // on passe validated a true
+        this.currentPurchaseOrder.validated = true;
+
+        // on check si il y a des problemes dans la commande, auquel cas ou push un msg sur slack
+        this.anyMissingItemsForValidation();
+
+        // on envoie les data au server
+        this.sendData();
+
+        // on notifie le resultat
+        this.$q.notify({
+          message: "Le bon est correctement validé !",
+          timeout: 5000,
+          color: "green"
+        });
+      } else {
+        this.$q.notify({
+          message:
+            "Vous ne pouvez valider un bon que si celui-ci est complet !",
+          timeout: 5000,
+          color: "orange"
+        });
+      }
+    },
     sendData() {
       console.log("======= SENDING DATA =========");
       // console.log('order : ', this.currentPurchaseOrder)
       // console.log('cart : ', this.currentCart)
       // any changes ?
-      //console.log(" ///// >>> original PO : ", this.originalPurchaseOrder);
-      //console.log(" ////// >>> current PO : ", this.currentPurchaseOrder);
+      console.log(" ///// >>> original PO : ", this.originalPurchaseOrder);
+      console.log(" ////// >>> current PO : ", this.currentPurchaseOrder);
 
       if (!this.hasPoChanged) return;
       console.log(
@@ -916,11 +1073,18 @@ export default {
       this.productSearch = true;
     },
     showOrderComment() {
-      console.log("we want to display the comment box");
+      //console.log("we want to display the comment box");
+      if (this.currentPurchaseOrder.comment != null)
+        this.orderComment = this.currentPurchaseOrder.comment;
       this.orderCommentBox = true;
     },
+    showSlackMessage() {
+      this.slackPushMessageBox = true;
+    },
     saveComment() {
-      console.log("we want to save the comment : ", this.orderComment);
+      //console.log("we want to save the comment : ", this.orderComment);
+      this.currentPurchaseOrder.comment = this.orderComment;
+      this.orderCommentBox = false;
     },
     onToday() {
       this.dateFrom =
@@ -983,6 +1147,8 @@ export default {
       this.poList = [];
       this.productList = null;
       this.noProducts = false;
+      this.orderComment = null;
+      setTimeout(() => {}, 2000);
       this.getPoList();
     },
     checkNumber(str) {
@@ -1030,6 +1196,7 @@ export default {
       var tmp = JSON.parse(JSON.stringify(this.currentPurchaseOrder));
       this.currentPurchaseOrder = null;
       this.currentPurchaseOrder = tmp;
+      this.checkValidateState();
     },
     onCancelProblem() {
       this.currentEditQty = null;
@@ -1047,6 +1214,7 @@ export default {
       this.currentEditQty = null;
       this.currentEditQty_received = null;
       this.currentEditId = null;
+      this.checkValidateState();
     },
     onCancelRaw() {
       this.rawQty = 1;
@@ -1345,6 +1513,164 @@ export default {
           return true;
       }
       return false;
+    },
+    capitalizeFistLetter(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+    sendSlackMsg(channel, supplier, number, date) {
+      if (number == "CREATED_BY_NYX") number = "PO-NYX";
+
+      var text2send =
+        "[ " +
+        this.capitalizeFistLetter(this.$store.getters.creds.user.firstname) +
+        " | " +
+        this.capitalizeFistLetter(supplier) +
+        " | " +
+        number +
+        " | " +
+        moment(date).format("DD/MM/YYYY") +
+        " ] [" +
+        channel +
+        "] : \n" +
+        this.slackPushMessage;
+
+      // var text2send = {
+      //   blocks: [
+      //     {
+      //       type: "header",
+      //       text: {
+      //         type: "plain_text",
+      //         text: "Probleme livraison <@U01AKULTWGP>"
+      //       }
+      //     },
+      //     {
+      //       type: "section",
+      //       text: {
+      //         type: "plain_text",
+      //         text: "User / truc muche ext."
+      //       }
+      //     },
+      //     {
+      //       type: "section",
+      //       text: {
+      //         type: "mrkdwn",
+      //         text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
+      //       }
+      //     },
+      //     {
+      //       type: "section",
+      //       text: {
+      //         type: "mrkdwn",
+      //         text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
+      //       }
+      //     },
+      //     {
+      //       type: "divider"
+      //     }
+      //   ]
+      // };
+
+      //console.log("DEBUG TEXT2SEND : ", text2send);
+
+      var slackObject = {
+        channel: channel,
+        text: text2send
+      };
+      var slackUrl =
+        this.$store.getters.apiurl +
+        "lambdas/4/publish_to_slack?apikey=MVP2410MVP";
+
+      axios
+        .post(slackUrl, slackObject)
+        .then(response => {
+          //console.log("SLACK MESSAGE PUSH response : ", response);
+          this.$q.notify({
+            message: "Message envoyé !",
+            timeout: 5000,
+            color: "green"
+          });
+        })
+        .catch(error => {
+          // console.log(
+          //   "| SLACK MESSAGE PUSH / POST | UN PROBLEME EST SURVENU : ",
+          //   error
+          // );
+          this.$q.notify({
+            message: "un problème est survenu, veuillez re-essayer plus tard.",
+            timeout: 5000,
+            color: "red"
+          });
+        });
+      this.slackPushMessageBox = false;
+      this.slackPushMessage = null;
+    },
+    checkValidateState() {
+      var tmpState = true;
+      for (var i = 0; i < this.currentPurchaseOrder.line_items.length; i++) {
+        // console.log(
+        //   "CHACK_VALIDATE_STATE : ",
+        //   this.currentPurchaseOrder.line_items[i]
+        // );
+        if (this.currentPurchaseOrder.line_items[i].received == -1) {
+          // console.log(
+          //   "on a trouvé un -1, pas la peine d'aller plus loin : on return"
+          // );
+          this.disableValidate = true;
+          //console.log("FINAL STATE for allowValidate : ", this.disableValidate);
+          return;
+        } else {
+          //console.log("on a trouvé une ligne remplie");
+          tmpState = false;
+        }
+        this.disableValidate = tmpState;
+        //console.log("FINAL STATE for allowValidate : ", this.disableValidate);
+      }
+    },
+    anyMissingItemsForValidation() {
+      //console.log(" anyMissingItemsForValidation ENTERING");
+      var flag = false;
+      for (var i = 0; i < this.currentPurchaseOrder.line_items.length; i++) {
+        if (
+          this.currentPurchaseOrder.units_received !=
+          this.currentPurchaseOrder.units_ordered
+        ) {
+          console.log("cette commande a un/des probleme(s)");
+          var text = "\n";
+          for (
+            var i = 0;
+            i < this.currentPurchaseOrder.line_items.length;
+            i++
+          ) {
+            if (
+              this.currentPurchaseOrder.line_items[i].quantity !=
+              this.currentPurchaseOrder.line_items[i].received
+            ) {
+              text =
+                text +
+                "Produit: " +
+                this.currentPurchaseOrder.line_items[i].full_title +
+                " (" +
+                this.currentPurchaseOrder.line_items[i].variant_id +
+                ")\n" +
+                "Quantité commandée: " +
+                this.currentPurchaseOrder.line_items[i].quantity +
+                "\n" +
+                "Quantité reçue: " +
+                this.currentPurchaseOrder.line_items[i].received +
+                "\n\n\n";
+            }
+          }
+          this.slackPushMessage = text;
+
+          // tous les produits a pb sont listés, on envoie sur le chan #ramassage
+          this.sendSlackMsg(
+            "#ramassage",
+            this.currentPurchaseOrder.supplier,
+            this.currentPurchaseOrder.number,
+            this.currentPurchaseOrder.expected_date
+          );
+        }
+      }
     }
   },
   // #endregion
