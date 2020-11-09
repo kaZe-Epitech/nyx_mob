@@ -188,6 +188,7 @@
             </q-item>
           </q-list>
         </div>
+
         <!-- BUTTONS -->
         <div class="q-my-md text-center">
           <q-btn
@@ -1520,66 +1521,64 @@ export default {
     sendSlackMsg(channel, supplier, number, date) {
       if (number == "CREATED_BY_NYX") number = "PO-NYX";
 
-      var text2send =
-        "[ " +
-        this.capitalizeFistLetter(this.$store.getters.creds.user.firstname) +
-        " | " +
-        this.capitalizeFistLetter(supplier) +
-        " | " +
-        number +
-        " | " +
-        moment(date).format("DD/MM/YYYY") +
-        " ] [" +
-        channel +
-        "] : \n" +
-        this.slackPushMessage;
+      // var text2send =
+      //   "[ " +
+      //   this.capitalizeFistLetter(this.$store.getters.creds.user.firstname) +
+      //   " | " +
+      //   this.capitalizeFistLetter(supplier) +
+      //   " | " +
+      //   number +
+      //   " | " +
+      //   moment(date).format("DD/MM/YYYY") +
+      //   " ] [" +
+      //   channel +
+      //   "] : \n" +
+      //   this.slackPushMessage;
 
-      // var text2send = {
-      //   blocks: [
-      //     {
-      //       type: "header",
-      //       text: {
-      //         type: "plain_text",
-      //         text: "Probleme livraison <@U01AKULTWGP>"
-      //       }
-      //     },
-      //     {
-      //       type: "section",
-      //       text: {
-      //         type: "plain_text",
-      //         text: "User / truc muche ext."
-      //       }
-      //     },
-      //     {
-      //       type: "section",
-      //       text: {
-      //         type: "mrkdwn",
-      //         text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
-      //       }
-      //     },
-      //     {
-      //       type: "section",
-      //       text: {
-      //         type: "mrkdwn",
-      //         text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
-      //       }
-      //     },
-      //     {
-      //       type: "divider"
-      //     }
-      //   ]
-      // };
+      var text2send = [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Probleme livraison <@U01AKULTWGP>"
+          }
+        },
+        {
+          type: "section",
+          text: {
+            type: "plain_text",
+            text: "User / truc muche ext."
+          }
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
+          }
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Produit :* blabla\n*Quantite reçue:* 2 / 3\n"
+          }
+        },
+        {
+          type: "divider"
+        }
+      ];
 
-      //console.log("DEBUG TEXT2SEND : ", text2send);
+      console.log("DEBUG TEXT2SEND : ", text2send);
 
       var slackObject = {
         channel: channel,
-        text: text2send
+        blocks: text2send
       };
       var slackUrl =
         this.$store.getters.apiurl +
         "lambdas/4/publish_to_slack?apikey=MVP2410MVP";
-
+      console.log("SLACK OBJECT >>> ", slackObject);
       axios
         .post(slackUrl, slackObject)
         .then(response => {
@@ -1591,10 +1590,10 @@ export default {
           });
         })
         .catch(error => {
-          // console.log(
-          //   "| SLACK MESSAGE PUSH / POST | UN PROBLEME EST SURVENU : ",
-          //   error
-          // );
+          console.log(
+            "| SLACK MESSAGE PUSH / POST | UN PROBLEME EST SURVENU : ",
+            error
+          );
           this.$q.notify({
             message: "un problème est survenu, veuillez re-essayer plus tard.",
             timeout: 5000,

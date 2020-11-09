@@ -1,0 +1,110 @@
+<template>
+  <!-- <div class="flex bg-grey-5 justify-center my-page">
+    <div v-if="!isPurchaseOrderDisplayed" class=" col-xs-12 col-sm-6">
+      <div class="row date-row justify-center q-py-sm">
+        date
+      </div>
+      <div class="row card-container justify-center q-pa-sm">
+        <div class="column">
+          <div class="row card q-mb-xs">card 1</div>
+          <div class="row card q-mb-xs">card 2</div>
+          <div class="row card q-mb-xs">card 3</div>
+          <div class="row card q-mb-xs">card 4</div>
+          <div class="row card q-mb-xs">card 5</div>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <div class="row">
+        test2
+      </div>
+    </div>
+  </div> -->
+  <q-page class="flex bg-grey-5 row">
+    <div v-if="!isPurchaseOrderDisplayed" class="my-container full-width">
+      <PurchaseOrdersList @toggleDisplay="toggleDisplay" />
+      {{ showMe() }}
+    </div>
+    <div v-else class="">
+      <PurchaseOrderDisplay @toggleDisplay="toggleDisplay" />
+    </div>
+  </q-page>
+</template>
+
+<script>
+import PurchaseOrdersList from "components/custom/PurchaseOrdersList.vue";
+import PurchaseOrderDisplay from "components/custom/PurchaseOrderDisplay.vue";
+
+// import Vuex from "vuex";
+// const store = new Vuex.Store({});
+
+export default {
+  name: "MvpPicking",
+  components: {
+    PurchaseOrdersList,
+    PurchaseOrderDisplay
+  },
+  data() {
+    return {
+      leftDrawerOpen: false,
+      isPurchaseOrderDisplayed: false,
+      loading: false
+    };
+  },
+  methods: {
+    showMe() {
+      console.log("#### testest : ", this.$store.state.pickingModule.date);
+      console.log("testest getter: ", this.$store.getters.date);
+      return this.$store.getters.date;
+    },
+    toggleDisplay(event) {
+      this.currentOrder = null;
+      for (var i = 0; i < this.ordersList.length; i++) {
+        if (this.ordersList[i].id == event)
+          this.currentOrder = this.ordersList[i];
+      }
+      this.isPurchaseOrderDisplayed = !this.isPurchaseOrderDisplayed;
+    }
+  },
+  created() {
+    this.loading = false;
+    this.$store.registerModule("pickingModule", {
+      state: {
+        date: "route 66"
+      },
+      getters: {
+        date: state => state.date
+      },
+      mutations: {
+        redate(state, payload) {
+          state.date = payload.date;
+        }
+      }
+    });
+    this.loading = true;
+  }
+};
+</script>
+
+<style>
+.custom-style {
+  color: white;
+}
+.my-container {
+  /* max-width: 800px; */
+  background-color: mistyrose;
+}
+.my-page {
+  min-height: 100vh;
+}
+.date-row {
+  background-color: slategrey;
+  min-width: 100vw !important;
+}
+.card-container {
+  background-color: violet;
+}
+.card {
+  background-color: white;
+}
+</style>
